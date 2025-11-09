@@ -1,1 +1,1 @@
-Please don't see from mobile the monstrosity.
+Yeah! Another reason to hate frontend programming.
