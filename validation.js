@@ -5,123 +5,116 @@ const password_input = document.getElementById('password-input');
 const repeat_password_input = document.getElementById('repeat-password-input');
 const error_message = document.getElementById('error-message');
 
-// Clear error styles when user starts typing
-[firstname_input, email_input, password_input, repeat_password_input].forEach(input => {
-    if (input) {
-        input.addEventListener('input', () => {
-            clearErrorStyles();
-        });
-    }
-});
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
 
-
-form.addEventListener('submit', (e) => {
-    // If we have first name as input then we are in SignUp page
-    let errors = [];
-    if(firstname_input){
-        errors = getSignupFormErrors(firstname_input.value, email_input.value, password_input.value, repeat_password_input.value);
-    } else { // If we don't have first name as input then it's login page
-        errors = getLoginFormErrors(email_input.value, password_input.value);
-    }
-
-    if(errors.length > 0){
-        // If there are any errors
-        e.preventDefault();
-        error_message.innerText = errors.join(". ");
-    } else {
-        // Form is valid, allow submission
-        error_message.innerText = "";
+const inputs = [firstname_input, email_input, password_input, repeat_password_input].filter(Boolean);
+inputs.forEach(input => {
+    input.addEventListener('input', () => {
         clearErrorStyles();
-        alert('Form submitted successfully!');
-        
-    }
+    });
 });
 
-function getSignupFormErrors(firstname, email, password, repeatPassword){
+if (form) {
+    form.addEventListener('submit', (e) => {
+        let errors = getSignupFormErrors(
+            firstname_input.value, 
+            email_input.value, 
+            password_input.value, 
+            repeat_password_input.value
+        );
+
+        if(errors.length > 0){
+            e.preventDefault();
+            if (error_message) {
+                error_message.innerText = errors.join(". ");
+            }
+        } else {
+            if (error_message) {
+                error_message.innerText = "";
+            }
+            clearErrorStyles();
+        }
+    });
+}
+
+function getSignupFormErrors(firstname, email, password, repeatPassword) {
     let errors = [];
-    
-    // Clear previous error styles
     clearErrorStyles();
 
-    // Test reCAPTCHA validation 
-    if(typeof grecaptcha !== 'undefined') {
+    if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse) {
         const recaptchaResponse = grecaptcha.getResponse();
-        if(recaptchaResponse.length === 0) {
+        if(!recaptchaResponse || recaptchaResponse.length === 0) {
             errors.push('Please complete the reCAPTCHA');
         }
     }
 
-    // Validate firstname
-    if (firstname === '' || firstname === null){
+    const trimmedFirstname = firstname ? firstname.trim() : '';
+    if (!trimmedFirstname) {
         errors.push('Firstname is required');
-        firstname_input.parentElement.classList.add('incorrect');
-        firstname_input.previousElementSibling.classList.add('incorrect-label');
-    } else if (firstname.length < 2) {
+        setFieldError(firstname_input);
+    } else if (trimmedFirstname.length < 2) {
         errors.push('Firstname must be at least 2 characters long');
-        firstname_input.parentElement.classList.add('incorrect');
-        firstname_input.previousElementSibling.classList.add('incorrect-label');
+        setFieldError(firstname_input);
+    } else {
+        clearFieldError(firstname_input);
     }
     
-    // Validate email
-    if (email === '' || email === null){
+    const trimmedEmail = email ? email.trim().toLowerCase() : '';
+    if (!trimmedEmail) {
         errors.push('Email is required');
-        email_input.parentElement.classList.add('incorrect');
-        email_input.previousElementSibling.classList.add('incorrect-label');
-    } else if (!isValidEmail(email)) {
+        setFieldError(email_input);
+    } else if (!isValidEmail(trimmedEmail)) {
         errors.push('Please enter a valid email address');
-        email_input.parentElement.classList.add('incorrect');
-        email_input.previousElementSibling.classList.add('incorrect-label');
+        setFieldError(email_input);
+    } else {
+        clearFieldError(email_input);
     }
     
-    // Validate password
-    if (password === '' || password === null){
+    if (!password) {
         errors.push('Password is required');
-        password_input.parentElement.classList.add('incorrect');
-        password_input.previousElementSibling.classList.add('incorrect-label');
-    } else if (password.length < 6) {
-        errors.push('Password must be at least 6 characters long');
-        password_input.parentElement.classList.add('incorrect');
-        password_input.previousElementSibling.classList.add('incorrect-label');
+        setFieldError(password_input);
+    } else if (password.length < 8) {
+        errors.push('Password must be at least 8 characters long');
+        setFieldError(password_input);
+    } else {
+        clearFieldError(password_input);
     }
     
-    // Validate repeat password
-    if (repeatPassword === '' || repeatPassword === null){
+    if (!repeatPassword) {
         errors.push('Repeat Password is required');
-        repeat_password_input.parentElement.classList.add('incorrect');
-        repeat_password_input.previousElementSibling.classList.add('incorrect-label');
+        setFieldError(repeat_password_input);
     } else if (password !== repeatPassword) {
         errors.push('Passwords do not match');
-        repeat_password_input.parentElement.classList.add('incorrect');
-        repeat_password_input.previousElementSibling.classList.add('incorrect-label');
+        setFieldError(repeat_password_input);
+    } else {
+        clearFieldError(repeat_password_input);
     }
 
     return errors;
 }
 
-function getLoginFormErrors(email, password){
-    let errors = [];
-    
-    // Clear previous error styles
-    clearErrorStyles();
-    
-    // Validate email
-    if (email === '' || email === null){
-        errors.push('Email is required');
-        email_input.parentElement.classList.add('incorrect');
-        email_input.previousElementSibling.classList.add('incorrect-label');
+function setFieldError(inputElement) {
+    if (inputElement && inputElement.parentElement) {
+        inputElement.parentElement.classList.add('incorrect');
+        if (inputElement.previousElementSibling) {
+            inputElement.previousElementSibling.classList.add('incorrect-label');
+        }
     }
-    // Validate password
-    if (password === '' || password === null){
-        errors.push('Password is required');
-        password_input.parentElement.classList.add('incorrect');
-        password_input.previousElementSibling.classList.add('incorrect-label');
-    }
+}
 
-    return errors;
+function clearFieldError(inputElement) {
+    if (inputElement && inputElement.parentElement) {
+        inputElement.parentElement.classList.remove('incorrect');
+        if (inputElement.previousElementSibling) {
+            inputElement.previousElementSibling.classList.remove('incorrect-label');
+        }
+    }
 }
 
 function clearErrorStyles() {
-    // Remove error styles from all form elements
     const formElements = document.querySelectorAll('form > div');
     formElements.forEach(element => {
         element.classList.remove('incorrect');
@@ -132,20 +125,20 @@ function clearErrorStyles() {
     });
 }
 
-// Password strength meter
-password_input.addEventListener('input', function() {
-    const strength = checkPasswordStrength(this.value);
-    updateStrengthMeter(strength);
-});
+if (password_input) {
+    password_input.addEventListener('input', function() {
+        const strength = checkPasswordStrength(this.value);
+        updateStrengthMeter(strength);
+    });
+}
 
 function checkPasswordStrength(password) {
+    if (!password) return 0;
+    
     let strength = 0;
     
-    // Length check
-    if (password.length >= 6) strength++;
     if (password.length >= 8) strength++;
-    
-    // Character variety checks
+    if (password.length >= 12) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/[0-9]/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
@@ -156,6 +149,8 @@ function checkPasswordStrength(password) {
 function updateStrengthMeter(strength) {
     const strengthFill = document.querySelector('.strength-fill');
     const strengthText = document.querySelector('.strength-text');
+    
+    if (!strengthFill || !strengthText) return;
     
     strengthFill.setAttribute('data-strength', strength);
     
